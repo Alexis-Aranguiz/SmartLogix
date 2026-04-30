@@ -1,0 +1,25 @@
+.dashboard-contenedor {
+  padding: 2rem;
+  background-color: #0f172a;
+  min-height: 100vh;
+}
+
+.dashboard-titulo {
+  color: #38bdf8;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-rol {
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.dashboard-boton-logout {
+  padding: 0.5rem 1.5rem;
+  background-color: #f87171;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+  font-weight: bold;
+}
