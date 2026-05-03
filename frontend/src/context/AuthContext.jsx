@@ -1,26 +1,34 @@
-import { createContext, useContext, useState } from 'react'
+// ============================================
+// SINGLETON + OBSERVER combinados
+// Singleton: SessionManager gestiona la sesión
+// Observer: authStore notifica a los componentes
+// ============================================
+
+import { createContext, useContext } from 'react'
+import SessionManager from '../singleton/SessionManager'
+import useAuthStore from '../store/authStore'
 
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [usuario, setUsuario] = useState(() => {
-    const guardado = localStorage.getItem('usuario')
-    return guardado ? JSON.parse(guardado) : null
-  })
+  const { setUsuario, clearUsuario } = useAuthStore()
 
-  const login = (datosUsuario) => {
-    setUsuario(datosUsuario)
-    localStorage.setItem('usuario', JSON.stringify(datosUsuario))
+  const login = (token, usuario) => {
+    // SINGLETON — una sola instancia guarda la sesión
+    SessionManager.getInstance().guardarSesion(token, usuario)
+    // OBSERVER — notifica a todos los componentes suscritos
+    setUsuario(usuario, token)
   }
 
   const logout = () => {
-    setUsuario(null)
-    localStorage.removeItem('usuario')
-    localStorage.removeItem('token')
+    // SINGLETON — cierra la sesión
+    SessionManager.getInstance().cerrarSesion()
+    // OBSERVER — notifica cierre de sesión
+    clearUsuario()
   }
 
   return (
-    <AuthContext.Provider value={{ usuario, login, logout }}>
+    <AuthContext.Provider value={{ login, logout }}>
       {children}
     </AuthContext.Provider>
   )

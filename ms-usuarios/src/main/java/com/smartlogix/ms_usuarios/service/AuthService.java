@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
-@Service // PATRÓN SINGLETON: Spring crea UNA sola instancia de esta clase
+@Service
 public class AuthService {
 
     @Autowired
@@ -38,11 +38,19 @@ public class AuthService {
 
         String token = jwtUtil.generarToken(usuario.getEmail(), usuario.getRol());
 
+        // SINGLETON — registrar sesión activa en la instancia única
+        SessionManager.getInstance().registrarSesion(token, usuario.getEmail());
+
         return new LoginResponse(
                 token,
                 usuario.getEmail(),
                 usuario.getNombre(),
                 usuario.getRol()
         );
+    }
+
+    public void logout(String token) {
+        // SINGLETON — cerrar sesión en la instancia única
+        SessionManager.getInstance().cerrarSesion(token);
     }
 }

@@ -1,9 +1,13 @@
-import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import useAuthStore from '../store/authStore'
 import '../styles/DashboardPage.css'
 
 function DashboardPage() {
-  const { usuario, logout } = useAuth()
+  // OBSERVER — componente suscrito al store (attach() del GoF)
+  // Cuando authStore cambia, este componente se actualiza solo
+  const usuario = useAuthStore(state => state.usuario)
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = () => {

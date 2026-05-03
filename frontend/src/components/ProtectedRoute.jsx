@@ -1,9 +1,14 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import SessionManager from '../singleton/SessionManager'
 
 function ProtectedRoute({ children }) {
-  const { usuario } = useAuth()
-  if (!usuario) return <Navigate to="/" replace />
+  // SINGLETON — verifica si hay sesión activa
+  const sesionActiva = SessionManager.getInstance().getSesionActiva()
+
+  if (!sesionActiva) {
+    return <Navigate to="/" replace />
+  }
+
   return children
 }
 

@@ -13,28 +13,27 @@ function LoginPage() {
   const navigate = useNavigate()
 
   const handleLogin = async () => {
-  if (!email || !password) {
-    setError('Completa todos los campos')
-    return
+    if (!email || !password) {
+      setError('Completa todos los campos')
+      return
+    }
+
+    try {
+      setCargando(true)
+      setError('')
+
+      const datos = await loginService(email, password)
+
+      // Activa Singleton (SessionManager) + Observer (authStore)
+      login(datos.token, datos.usuario)
+      navigate('/dashboard')
+
+    } catch (err) {
+      setError('Credenciales incorrectas')
+    } finally {
+      setCargando(false)
+    }
   }
-
-  try {
-    setCargando(true)
-    setError('')
-
-    // Llamada real al backend
-    const datos = await loginService(email, password)
-
-    localStorage.setItem('token', datos.token)
-    login(datos.usuario)
-    navigate('/dashboard')
-
-  } catch (err) {
-    setError('Credenciales incorrectas')
-  } finally {
-    setCargando(false)
-  }
-}
 
   return (
     <div className="login-contenedor">
