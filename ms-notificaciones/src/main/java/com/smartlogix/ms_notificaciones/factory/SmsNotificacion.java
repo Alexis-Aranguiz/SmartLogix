@@ -1,5 +1,18 @@
 package com.smartlogix.ms_notificaciones.factory;
 
-public class SmsNotificacion {
-    
+import org.springframework.stereotype.Component;
+
+@Component
+public class SmsNotificacion implements NotificacionFactory {
+
+    @Override
+    public void enviar(String destinatario, String asunto, String mensaje) {
+        System.out.println("   SMS enviado a: " + destinatario);
+        System.out.println("   Mensaje: " + mensaje);
+    }
+
+    @Override
+    public String getTipo() {
+        return "SMS";
+    }
 }

@@ -23,8 +23,6 @@ function LoginPage() {
       setError('')
 
       const datos = await loginService(email, password)
-
-      // Activa Singleton (SessionManager) + Observer (authStore)
       login(datos.token, datos.usuario)
       navigate('/dashboard')
 

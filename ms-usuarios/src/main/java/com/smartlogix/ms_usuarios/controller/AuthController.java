@@ -46,7 +46,6 @@ public ResponseEntity<?> logout(@RequestBody(required = false) Map<String, Strin
     return ResponseEntity.badRequest().body("Token requerido");
 }
 
-    // Útil para demostrar el Singleton en la defensa oral
     @GetMapping("/sesiones-activas")
     public ResponseEntity<?> sesionesActivas() {
         int total = SessionManager.getInstance().totalSesionesActivas();
@@ -55,7 +54,6 @@ public ResponseEntity<?> logout(@RequestBody(required = false) Map<String, Strin
 
     @PostMapping("/registro")
 public ResponseEntity<?> registro(@RequestBody Usuario usuario) {
-    // Forzar id a null para que Hibernate haga INSERT y no UPDATE
     usuario.setId(null);
     usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
     usuarioRepository.save(usuario);

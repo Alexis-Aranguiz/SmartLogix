@@ -1,5 +1,6 @@
 package com.smartlogix.ms_notificaciones.factory;
 
-public class NotificacionFactory {
-    
+public interface NotificacionFactory {
+    void enviar(String destinatario, String asunto, String mensaje);
+    String getTipo();
 }

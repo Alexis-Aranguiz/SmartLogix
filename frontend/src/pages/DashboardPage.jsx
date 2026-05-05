@@ -4,8 +4,6 @@ import useAuthStore from '../store/authStore'
 import '../styles/DashboardPage.css'
 
 function DashboardPage() {
-  // OBSERVER — componente suscrito al store (attach() del GoF)
-  // Cuando authStore cambia, este componente se actualiza solo
   const usuario = useAuthStore(state => state.usuario)
   const { logout } = useAuth()
   const navigate = useNavigate()

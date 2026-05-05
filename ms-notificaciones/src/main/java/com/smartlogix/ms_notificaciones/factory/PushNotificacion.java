@@ -1,5 +1,19 @@
 package com.smartlogix.ms_notificaciones.factory;
 
-public class PushNotificacion {
-    
+import org.springframework.stereotype.Component;
+
+@Component
+public class PushNotificacion implements NotificacionFactory {
+
+    @Override
+    public void enviar(String destinatario, String asunto, String mensaje) {
+        System.out.println("   PUSH enviada a: " + destinatario);
+        System.out.println("   Asunto: " + asunto);
+        System.out.println("   Mensaje: " + mensaje);
+    }
+
+    @Override
+    public String getTipo() {
+        return "PUSH";
+    }
 }

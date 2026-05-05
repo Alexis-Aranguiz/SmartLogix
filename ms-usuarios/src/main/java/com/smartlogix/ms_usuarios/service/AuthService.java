@@ -37,8 +37,6 @@ public class AuthService {
         }
 
         String token = jwtUtil.generarToken(usuario.getEmail(), usuario.getRol());
-
-        // SINGLETON — registrar sesión activa en la instancia única
         SessionManager.getInstance().registrarSesion(token, usuario.getEmail());
 
         return new LoginResponse(
@@ -50,7 +48,6 @@ public class AuthService {
     }
 
     public void logout(String token) {
-        // SINGLETON — cerrar sesión en la instancia única
         SessionManager.getInstance().cerrarSesion(token);
     }
 }
