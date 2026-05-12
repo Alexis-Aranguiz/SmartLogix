@@ -74,6 +74,7 @@ public class EnvioService {
                 .pedidoId(envio.getPedidoId())
                 .trackingNumber(envio.getTrackingNumber())
                 .estado(envio.getEstado().name())
+                .nombreTransportista(envio.getTransportista() != null ? envio.getTransportista().getNombre() : "Por asignar")
                 .fechaCreacion(envio.getFechaCreacion()) // <--- AQUÍ PASAMOS LA FECHA
                 .build();
     }
