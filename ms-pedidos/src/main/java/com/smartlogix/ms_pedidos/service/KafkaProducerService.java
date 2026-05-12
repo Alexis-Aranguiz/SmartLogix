@@ -1,7 +1,7 @@
 package com.smartlogix.ms_pedidos.service;
 
 import com.smartlogix.ms_pedidos.event.PedidoCanceladoEvent;
-import com.smartlogix.ms_pedidos.event.PedidoConfirmado;
+import com.smartlogix.ms_pedidos.event.PedidoConfirmadoEvent;
 import com.smartlogix.ms_pedidos.event.PedidoCreadoEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,7 +20,7 @@ public class KafkaProducerService {
         kafkaTemplate.send(TOPIC, evento.getNumeroPedido(), evento);
     }
 
-    public void enviarPedidoConfirmado(PedidoConfirmado evento) {
+    public void enviarPedidoConfirmado(PedidoConfirmadoEvent evento) {
         System.out.println("Kafka: Confirmando pedido #" + evento.getNumeroPedido() + " en el bus de eventos.");
         kafkaTemplate.send("pedido-confirmado-topic", evento.getNumeroPedido(), evento);
     }

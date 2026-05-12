@@ -1,8 +1,9 @@
 package com.smartlogix.ms_pedidos.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -10,7 +11,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "pedidos")
-@Data
+@Getter
+@Setter
+@ToString(exclude = "items")
 public class Pedido {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,8 +26,7 @@ public class Pedido {
     private String tipoCliente; // NORMAL, PREMIUM
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<ItemPedido> items = new ArrayList<>();
+    private List<PedidoItem> items = new ArrayList<>();
 
     @Temporal(TemporalType.TIMESTAMP)
     private Date fechaCreacion;

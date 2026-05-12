@@ -1,14 +1,21 @@
 package com.smartlogix.ms_pedidos.model;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 @Entity
-@Table(name = "items_pedido")
-@Data
-public class ItemPedido {
+@Table(name = "pedido_items")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class PedidoItem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,7 +27,7 @@ public class ItemPedido {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "pedido_id")
-    @JsonBackReference
+    @JsonIgnore
     @ToString.Exclude
     private Pedido pedido;
 }

@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PedidoConfirmado {
+public class PedidoConfirmadoEvent {
     private String numeroPedido;
     private String clienteEmail;
     private Double total;

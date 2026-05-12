@@ -1,5 +1,6 @@
 package com.smartlogix.ms_pedidos.controller;
 
+import com.smartlogix.ms_pedidos.dto.PedidoRequest;
 import com.smartlogix.ms_pedidos.model.Pedido;
 import com.smartlogix.ms_pedidos.service.PedidoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,8 +18,8 @@ public class PedidoController {
     private PedidoService pedidoService;
 
     @PostMapping
-    public ResponseEntity<Pedido> crearPedido(@RequestBody Pedido pedido) {
-        return ResponseEntity.ok(pedidoService.crearPedido(pedido));
+    public ResponseEntity<Pedido> crearPedido(@RequestBody PedidoRequest pedidoRequest) {
+        return ResponseEntity.ok(pedidoService.crearPedido(pedidoRequest));
     }
 
     @GetMapping
