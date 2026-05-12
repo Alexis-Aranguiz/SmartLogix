@@ -1,5 +1,5 @@
 package com.smartlogix.ms_pedidos.strategy;
 
-public class DescuentoStrategy {
-    
+public interface DescuentoStrategy {
+    Double aplicarDescuento(Double total);
 }

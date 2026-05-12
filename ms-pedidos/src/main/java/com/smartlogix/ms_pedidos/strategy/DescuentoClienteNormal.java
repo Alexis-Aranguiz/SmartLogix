@@ -1,5 +1,11 @@
 package com.smartlogix.ms_pedidos.strategy;
 
-public class DescuentoClienteNormal {
-    
+import org.springframework.stereotype.Component;
+
+@Component("NORMAL")
+public class DescuentoClienteNormal implements DescuentoStrategy {
+    @Override
+    public Double aplicarDescuento(Double total) {
+        return total; // Sin descuento para clientes normales
+    }
 }
