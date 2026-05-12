@@ -16,5 +16,6 @@ public class EnvioResponse {
     private Long pedidoId;
     private String trackingNumber;
     private String estado;
+    private String nombreTransportista;
     private LocalDateTime fechaCreacion;
 }

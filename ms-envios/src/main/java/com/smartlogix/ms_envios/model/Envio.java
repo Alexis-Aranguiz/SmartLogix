@@ -31,6 +31,10 @@ public class Envio {
     @Enumerated(EnumType.STRING)
     private EstadoEnvio estado;
 
+    @ManyToOne
+    @JoinColumn(name = "transportista_id")
+    private Transportista transportista;
+
    
 
     private LocalDateTime fechaCreacion = LocalDateTime.now();
