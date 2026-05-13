@@ -15,6 +15,8 @@ public class PedidoRequest {
     private String clienteEmail;
     private String tipoCliente; // NORMAL o PREMIUM
     private List<ItemRequest> items;
+    private String metodoPago;   // TARJETA, TRANSFERENCIA, WEBPAY
+    private String datoPago;     // número de tarjeta o cuenta bancaria
 
     @Data
     public static class ItemRequest {

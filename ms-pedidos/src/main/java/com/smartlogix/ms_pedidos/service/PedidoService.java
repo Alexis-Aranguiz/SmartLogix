@@ -5,6 +5,8 @@ import com.smartlogix.ms_pedidos.dto.PedidoRequest;
 import com.smartlogix.ms_pedidos.event.PedidoCanceladoEvent;
 import com.smartlogix.ms_pedidos.event.PedidoConfirmadoEvent;
 import com.smartlogix.ms_pedidos.event.PedidoCreadoEvent;
+import com.smartlogix.ms_pedidos.facade.PagoFacade;
+import com.smartlogix.ms_pedidos.facade.dto.PagoResult;
 import com.smartlogix.ms_pedidos.model.Pedido;
 import com.smartlogix.ms_pedidos.model.PedidoItem;
 import com.smartlogix.ms_pedidos.repository.PedidoRepository;
@@ -27,6 +29,9 @@ public class PedidoService {
 
     @Autowired
     private NotificacionClient notificacionClient;
+    // Agregar el @Autowired
+    @Autowired
+    private PagoFacade pagoFacade;
 
     @Autowired
     private DescuentoStrategyFactory strategyFactory;
@@ -35,69 +40,85 @@ public class PedidoService {
     private KafkaProducerService kafkaProducerService;
 
     @Transactional
-    public Pedido crearPedido(PedidoRequest request) {
-        Pedido pedido = new Pedido();
-        pedido.setClienteEmail(request.getClienteEmail());
-        pedido.setTipoCliente(request.getTipoCliente() != null ? request.getTipoCliente() : "NORMAL");
-        pedido.setNumeroPedido(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        pedido.setEstado("CREADO");
-        pedido.setTotal(0.0);
-        pedido.setItems(new ArrayList<>());
-        
-        if (request.getItems() != null && !request.getItems().isEmpty()) {
-            List<PedidoItem> items = request.getItems().stream().map(itemReq -> {
-                PedidoItem item = new PedidoItem();
-                item.setProductoId(itemReq.getProductoId());
-                item.setNombreProducto(itemReq.getNombreProducto());
-                item.setCantidad(itemReq.getCantidad() != null ? itemReq.getCantidad() : 0);
-                item.setPrecioUnitario(itemReq.getPrecioUnitario() != null ? itemReq.getPrecioUnitario() : 0.0);
-                item.setPedido(pedido);
-                return item;
-            }).collect(Collectors.toList());
-            
-            pedido.setItems(items);
-            
-            // Calcular subtotal sumando (cantidad * precioUnitario) de cada ítem
-            Double subtotal = pedido.getItems().stream()
-                    .mapToDouble(item -> {
-                        int cant = item.getCantidad() != null ? item.getCantidad() : 0;
-                        double precio = item.getPrecioUnitario() != null ? item.getPrecioUnitario() : 0.0;
-                        return cant * precio;
-                    })
-                    .sum();
-            
-            // Aplicar estrategia de descuento según tipo de cliente
-            try {
-                Double totalConDescuento = strategyFactory.getStrategy(pedido.getTipoCliente()).aplicarDescuento(subtotal);
-                pedido.setTotal(totalConDescuento);
-            } catch (Exception e) {
-                System.err.println("Error al aplicar estrategia de descuento: " + e.getMessage() + ". Usando subtotal sin descuento.");
-                pedido.setTotal(subtotal);
-            }
-        }
-        
-        Pedido guardado = pedidoRepository.save(pedido);
-        
-        // 1. Notificación Síncrona (Feign)
-        notificarCambioEstado(guardado);
+public Pedido crearPedido(PedidoRequest request) {
+    Pedido pedido = new Pedido();
+    pedido.setClienteEmail(request.getClienteEmail());
+    pedido.setTipoCliente(request.getTipoCliente() != null ? request.getTipoCliente() : "NORMAL");
+    pedido.setNumeroPedido(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
+    pedido.setEstado("CREADO");
+    pedido.setTotal(0.0);
+    pedido.setItems(new ArrayList<>());
 
-        // 2. Notificación Asíncrona (Kafka para Inventario)
+    if (request.getItems() != null && !request.getItems().isEmpty()) {
+        List<PedidoItem> items = request.getItems().stream().map(itemReq -> {
+            PedidoItem item = new PedidoItem();
+            item.setProductoId(itemReq.getProductoId());
+            item.setNombreProducto(itemReq.getNombreProducto());
+            item.setCantidad(itemReq.getCantidad() != null ? itemReq.getCantidad() : 0);
+            item.setPrecioUnitario(itemReq.getPrecioUnitario() != null ? itemReq.getPrecioUnitario() : 0.0);
+            item.setPedido(pedido);
+            return item;
+        }).collect(Collectors.toList());
+
+        pedido.setItems(items);
+
+        Double subtotal = pedido.getItems().stream()
+                .mapToDouble(item -> {
+                    int cant = item.getCantidad() != null ? item.getCantidad() : 0;
+                    double precio = item.getPrecioUnitario() != null ? item.getPrecioUnitario() : 0.0;
+                    return cant * precio;
+                })
+                .sum();
+
         try {
-            PedidoCreadoEvent evento = PedidoCreadoEvent.builder()
-                    .numeroPedido(guardado.getNumeroPedido())
-                    .clienteEmail(guardado.getClienteEmail())
-                    .total(guardado.getTotal())
-                    .items(guardado.getItems() != null ? guardado.getItems().stream()
-                            .map(i -> new PedidoCreadoEvent.ItemEvento(i.getProductoId(), i.getCantidad()))
-                            .collect(Collectors.toList()) : new ArrayList<>())
-                    .build();
-            kafkaProducerService.enviarPedidoCreado(evento);
+            Double totalConDescuento = strategyFactory.getStrategy(pedido.getTipoCliente()).aplicarDescuento(subtotal);
+            pedido.setTotal(totalConDescuento);
         } catch (Exception e) {
-            System.err.println("ERROR KAFKA: No se pudo enviar PedidoCreadoEvent. La SAGA no se iniciará automáticamente: " + e.getMessage());
+            System.err.println("Error al aplicar estrategia de descuento: " + e.getMessage());
+            pedido.setTotal(subtotal);
         }
-
-        return guardado;
     }
+
+    // ── FACADE — procesar pago ──────────────────────────────────
+    // PedidoService solo llama procesarPago() sin saber cómo
+    // funciona cada medio de pago por dentro
+    PagoResult resultadoPago = pagoFacade.procesarPago(
+        pedido.getTotal(),
+        request.getMetodoPago() != null ? request.getMetodoPago() : "WEBPAY",
+        request.getDatoPago() != null ? request.getDatoPago() : "",
+        pedido.getNumeroPedido()
+    );
+
+    if (!resultadoPago.isExitoso()) {
+        throw new RuntimeException("Pago rechazado: " + resultadoPago.getMensaje());
+    }
+
+    pedido.setCodigoTransaccion(resultadoPago.getCodigoTransaccion());
+    System.out.println("✅ Facade: pago procesado — " + resultadoPago.getMensaje());
+    // ───────────────────────────────────────────────────────────
+
+    Pedido guardado = pedidoRepository.save(pedido);
+
+    // Notificación Síncrona (Feign)
+    notificarCambioEstado(guardado);
+
+    // Notificación Asíncrona (Kafka)
+    try {
+        PedidoCreadoEvent evento = PedidoCreadoEvent.builder()
+                .numeroPedido(guardado.getNumeroPedido())
+                .clienteEmail(guardado.getClienteEmail())
+                .total(guardado.getTotal())
+                .items(guardado.getItems() != null ? guardado.getItems().stream()
+                        .map(i -> new PedidoCreadoEvent.ItemEvento(i.getProductoId(), i.getCantidad()))
+                        .collect(Collectors.toList()) : new ArrayList<>())
+                .build();
+        kafkaProducerService.enviarPedidoCreado(evento);
+    } catch (Exception e) {
+        System.err.println("ERROR KAFKA: " + e.getMessage());
+    }
+
+    return guardado;
+}
 
     public List<Pedido> listarTodos() {
         return pedidoRepository.findAll();

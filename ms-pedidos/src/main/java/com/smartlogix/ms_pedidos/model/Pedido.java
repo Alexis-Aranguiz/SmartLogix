@@ -24,6 +24,7 @@ public class Pedido {
     private Double total;
     private String estado; // CREADO, ENVIADO, ENTREGADO
     private String tipoCliente; // NORMAL, PREMIUM
+    private String codigoTransaccion; // código devuelto por la fachada
 
     @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PedidoItem> items = new ArrayList<>();
