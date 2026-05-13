@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PedidoCanceladoEvent {
+public class PedidoConfirmadoEvent {
     private String numeroPedido;
-    private String motivo;
+    private String clienteEmail;
+    private Double total;
 }

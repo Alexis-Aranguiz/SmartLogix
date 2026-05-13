@@ -1,5 +1,6 @@
 package com.smartlogix.ms_notificaciones.controller;
 
+import com.smartlogix.ms_notificaciones.listener.PedidoEventListener;
 import com.smartlogix.ms_notificaciones.listener.StockEventListener;
 import com.smartlogix.ms_notificaciones.model.Notificacion;
 import com.smartlogix.ms_notificaciones.service.NotificacionService;
@@ -21,6 +22,9 @@ public class NotificacionController {
     @Autowired
     private StockEventListener stockEventListener;
 
+    @Autowired
+    private PedidoEventListener pedidoEventListener;
+
     @GetMapping
     public ResponseEntity<List<Notificacion>> listar() {
         return ResponseEntity.ok(notificacionService.listarNotificaciones());
@@ -38,5 +42,15 @@ public class NotificacionController {
                 tipoAlerta, stockNuevo);
 
         return ResponseEntity.ok("Notificación procesada");
+    }
+
+    @PostMapping("/pedido-evento")
+    public ResponseEntity<?> recibirEventoPedido(@RequestBody Map<String, Object> evento) {
+        String numeroPedido = evento.get("numeroPedido").toString();
+        String clienteEmail = evento.get("clienteEmail").toString();
+        String estado = evento.get("estado").toString();
+
+        pedidoEventListener.onPedidoActualizado(numeroPedido, clienteEmail, estado);
+        return ResponseEntity.ok("Notificación de pedido procesada");
     }
 }

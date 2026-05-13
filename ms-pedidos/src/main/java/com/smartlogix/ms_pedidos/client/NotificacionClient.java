@@ -1,5 +1,13 @@
 package com.smartlogix.ms_pedidos.client;
 
-public class NotificacionClient {
-    
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import java.util.Map;
+
+@FeignClient(name = "ms-notificaciones", url = "${app.notificaciones.url:http://localhost:8082}")
+public interface NotificacionClient {
+
+    @PostMapping("/api/notificaciones/pedido-evento")
+    void enviarEventoPedido(@RequestBody Map<String, Object> evento);
 }

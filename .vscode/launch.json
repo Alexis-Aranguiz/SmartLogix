@@ -1,0 +1,64 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-ApiGatewayApplication<api-gateway>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.api_gateway.ApiGatewayApplication",
+            "projectName": "api-gateway",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-MsEnviosApplication<ms-envios>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.ms_envios.MsEnviosApplication",
+            "projectName": "ms-envios",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-MsInventarioApplication<ms-inventario>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.ms_inventario.MsInventarioApplication",
+            "projectName": "ms-inventario",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-MsNotificacionesApplication<ms-notificaciones>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.ms_notificaciones.MsNotificacionesApplication",
+            "projectName": "ms-notificaciones",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-MsPedidosApplication<ms-pedidos>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.ms_pedidos.MsPedidosApplication",
+            "projectName": "ms-pedidos",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-MsUsuariosApplication<ms-usuarios>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.smartlogix.ms_usuarios.MsUsuariosApplication",
+            "projectName": "ms-usuarios",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
