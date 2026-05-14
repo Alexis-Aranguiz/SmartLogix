@@ -2,11 +2,6 @@ package com.smartlogix.ms_pedidos.facade.subsistema;
 
 import org.springframework.stereotype.Component;
 
-/**
- * SUBSISTEMA 1 — Procesamiento de tarjetas
- * Lógica compleja de validación, tokenización y cargo
- * El cliente (PedidoService) nunca interactúa con esto directamente
- */
 @Component
 public class TarjetaService {
 

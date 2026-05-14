@@ -2,10 +2,6 @@ package com.smartlogix.ms_pedidos.facade.subsistema;
 
 import org.springframework.stereotype.Component;
 
-/**
- * SUBSISTEMA 3 — WebPay (pasarela de pago chilena)
- * Inicialización de transacción, redirección y confirmación
- */
 @Component
 public class WebPayService {
 

@@ -6,6 +6,6 @@ public enum EstadoEnvio {
     DESPACHADO,
     EN_CAMINO,
     ENTREGADO,
-    FALLIDO, // <--- REVISA QUE ESTÉ ESCRITO ASÍ
+    FALLIDO, 
     CANCELADO
 }

@@ -29,7 +29,7 @@ public class PedidoService {
 
     @Autowired
     private NotificacionClient notificacionClient;
-    // Agregar el @Autowired
+
     @Autowired
     private PagoFacade pagoFacade;
 
@@ -79,9 +79,6 @@ public Pedido crearPedido(PedidoRequest request) {
         }
     }
 
-    // ── FACADE — procesar pago ──────────────────────────────────
-    // PedidoService solo llama procesarPago() sin saber cómo
-    // funciona cada medio de pago por dentro
     PagoResult resultadoPago = pagoFacade.procesarPago(
         pedido.getTotal(),
         request.getMetodoPago() != null ? request.getMetodoPago() : "WEBPAY",
@@ -94,15 +91,15 @@ public Pedido crearPedido(PedidoRequest request) {
     }
 
     pedido.setCodigoTransaccion(resultadoPago.getCodigoTransaccion());
-    System.out.println("✅ Facade: pago procesado — " + resultadoPago.getMensaje());
-    // ───────────────────────────────────────────────────────────
+    System.out.println(" Facade: pago procesado — " + resultadoPago.getMensaje());
+
 
     Pedido guardado = pedidoRepository.save(pedido);
 
-    // Notificación Síncrona (Feign)
+ 
     notificarCambioEstado(guardado);
 
-    // Notificación Asíncrona (Kafka)
+
     try {
         PedidoCreadoEvent evento = PedidoCreadoEvent.builder()
                 .numeroPedido(guardado.getNumeroPedido())

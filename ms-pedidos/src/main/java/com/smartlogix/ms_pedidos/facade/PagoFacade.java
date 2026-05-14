@@ -7,22 +7,9 @@ import com.smartlogix.ms_pedidos.facade.subsistema.WebPayService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-/**
- * PATRÓN FACADE — PagoFacade
- * ══════════════════════════════════════════════════════
- * Actúa como el "ejecutivo del banco":
- * El cliente (PedidoService) solo llama procesarPago()
- * La fachada coordina internamente con los subsistemas
- * sin que el cliente sepa cómo funciona cada uno.
- *
- * PedidoService NO conoce TarjetaService, TransferenciaService
- * ni WebPayService — solo conoce PagoFacade.
- * ══════════════════════════════════════════════════════
- */
 @Component
 public class PagoFacade {
 
-    // Subsistemas complejos — el cliente nunca los ve directamente
     @Autowired
     private TarjetaService tarjetaService;
 
@@ -32,10 +19,7 @@ public class PagoFacade {
     @Autowired
     private WebPayService webPayService;
 
-    /**
-     * Método ÚNICO que expone la fachada al cliente
-     * Toda la complejidad queda oculta aquí dentro
-     */
+
     public PagoResult procesarPago(Double monto, String metodoPago,
                                     String datoPago, String ordenCompra) {
         System.out.println("🏪 Facade: procesando pago de $" + monto +
@@ -50,11 +34,9 @@ public class PagoFacade {
         };
     }
 
-    // ── MÉTODOS PRIVADOS — subsistemas ocultos ─────────────────────
 
     private PagoResult procesarTarjeta(Double monto, String numeroTarjeta) {
         try {
-            // Coordina 3 pasos del subsistema transparentemente
             String validacion = tarjetaService.validarTarjeta(numeroTarjeta);
             if (!"TARJETA_VALIDA".equals(validacion)) {
                 return new PagoResult(false, null, "Tarjeta inválida", "TARJETA");
@@ -72,7 +54,6 @@ public class PagoFacade {
 
     private PagoResult procesarTransferencia(Double monto, String numeroCuenta) {
         try {
-            // Coordina 3 pasos del subsistema transparentemente
             boolean cuentaValida = transferenciaService.verificarCuenta(numeroCuenta);
             if (!cuentaValida) {
                 return new PagoResult(false, null, "Cuenta bancaria inválida", "TRANSFERENCIA");
@@ -91,7 +72,6 @@ public class PagoFacade {
 
     private PagoResult procesarWebPay(Double monto, String ordenCompra) {
         try {
-            // Coordina 3 pasos del subsistema transparentemente
             String tokenWebpay = webPayService.iniciarTransaccion(monto, ordenCompra);
             boolean confirmado = webPayService.confirmarTransaccion(tokenWebpay);
             if (!confirmado) {

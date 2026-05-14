@@ -2,10 +2,6 @@ package com.smartlogix.ms_pedidos.facade.subsistema;
 
 import org.springframework.stereotype.Component;
 
-/**
- * SUBSISTEMA 2 — Transferencia bancaria
- * Validación de cuenta, verificación de fondos y transferencia
- */
 @Component
 public class TransferenciaService {
 
