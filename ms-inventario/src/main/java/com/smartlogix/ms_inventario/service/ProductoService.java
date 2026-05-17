@@ -12,11 +12,22 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 public class ProductoService {
+
+    // ══════════════════════════════════════════════════════════════
+    // PATRÓN OBSERVER — Publisher (GoF)
+    // subscribers[] = lista de observers registrados
+    // subscribe()   = registrar observer
+    // notify()      = notificar a todos los observers
+    // ══════════════════════════════════════════════════════════════
+
+    // Lista de suscriptores — equivale a subscribers[] del diagrama
+    private final List<StockObserver> subscribers = new ArrayList<>();
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -26,34 +37,41 @@ public class ProductoService {
 
     @Autowired
     private AlertaStockRepository alertaStockRepository;
+
     @Autowired
-private org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder;
+    private org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder;
 
-@org.springframework.beans.factory.annotation.Value("${notificaciones.url}")
-private String notificacionesUrl;
+    @org.springframework.beans.factory.annotation.Value("${notificaciones.url}")
+    private String notificacionesUrl;
 
-private void notificarCambioStock(Producto producto, Integer stockAnterior, String tipoAlerta) {
-    if (tipoAlerta.equals("NORMAL")) return;
-
-    try {
-        java.util.Map<String, Object> evento = new java.util.HashMap<>();
-        evento.put("idProducto", producto.getId());
-        evento.put("nombreProducto", producto.getNombre());
-        evento.put("tipoAlerta", tipoAlerta);
-        evento.put("stockNuevo", producto.getStock());
-
-        webClientBuilder.build()
-                .post()
-                .uri(notificacionesUrl + "/api/notificaciones/stock-evento")
-                .bodyValue(evento)
-                .retrieve()
-                .bodyToMono(String.class)
-                .subscribe(response ->
-                        System.out.println(" ms-notificaciones notificado: " + response));
-    } catch (Exception e) {
-        System.out.println(" No se pudo notificar a ms-notificaciones: " + e.getMessage());
+    // subscribe() del GoF — registrar un observer
+    public void subscribe(StockObserver observer) {
+        subscribers.add(observer);
+        System.out.println("✅ Observer suscrito: " + observer.getClass().getSimpleName());
     }
-}
+
+    // unsubscribe() del GoF — eliminar un observer
+    public void unsubscribe(StockObserver observer) {
+        subscribers.remove(observer);
+        System.out.println("🗑️ Observer desuscrito: " + observer.getClass().getSimpleName());
+    }
+
+    // notifySubscribers() del GoF — notificar a todos los observers
+    private void notifySubscribers(Long idProducto, String nombreProducto,
+                                    String tipoAlerta, Integer stockNuevo) {
+        System.out.println("📣 Notificando a " + subscribers.size() + " observer(s)");
+        subscribers.forEach(observer ->
+            observer.update(idProducto, nombreProducto, tipoAlerta, stockNuevo)
+        );
+    }
+
+    // Registrar observers al iniciar el servicio
+    @Autowired
+    public void registrarObservers(AlertaStockObserver alertaObserver) {
+        subscribe(alertaObserver);
+    }
+
+    // ══════════════════════════════════════════════════════════════
 
     public List<ProductoResponse> listarProductos() {
         return productoRepository.findAll()
@@ -95,76 +113,90 @@ private void notificarCambioStock(Producto producto, Integer stockAnterior, Stri
 
         String tipoAlerta = determinarTipoAlerta(producto);
 
-        if (!tipoAlerta.equals("NORMAL")) {
-            AlertaStock alerta = new AlertaStock();
-            alerta.setIdProducto(producto.getId());
-            alerta.setTipo(tipoAlerta);
-            alerta.setMensaje(generarMensaje(tipoAlerta, producto));
-            alertaStockRepository.save(alerta);
-        }
+        // notifySubscribers() — notifica a observers locales (AlertaStockObserver)
+        notifySubscribers(producto.getId(), producto.getNombre(),
+                tipoAlerta, nuevoStock);
 
-        System.out.println("Observer notificando cambio de stock: " +
-                producto.getNombre() + " [" + tipoAlerta + "]");
-
+        // Publicar evento Spring (para otros microservicios)
         eventPublisher.publishEvent(new StockActualizadoEvent(
-                this,
-                producto.getId(),
-                producto.getSku(),
-                producto.getNombre(),
-                stockAnterior,
-                nuevoStock,
-                tipoAlerta
+                this, producto.getId(), producto.getSku(),
+                producto.getNombre(), stockAnterior, nuevoStock, tipoAlerta
         ));
+
+        // Notificar a ms-notificaciones via REST
         notificarCambioStock(producto, stockAnterior, tipoAlerta);
 
         return toResponse(producto);
     }
+
     @Transactional
-public ProductoResponse devolverStock(Long id, Integer cantidad) {
-    Producto producto = productoRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+    public void descontarStock(Long productoId, Integer cantidad) {
+        Producto producto = productoRepository.findById(productoId)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + productoId));
 
-    Integer stockAnterior = producto.getStock();
-    producto.setStock(producto.getStock() + cantidad);
-    productoRepository.save(producto);
+        if (producto.getStock() < cantidad) {
+            throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+        }
 
-    System.out.println("🔄 SAGA Compensación: stock devuelto para " +
-            producto.getNombre() + " +" + cantidad +
-            " (anterior: " + stockAnterior + " → nuevo: " + producto.getStock() + ")");
+        Integer stockAnterior = producto.getStock();
+        producto.setStock(producto.getStock() - cantidad);
+        productoRepository.save(producto);
 
-    return toResponse(producto);
-}
-@Transactional
-public void descontarStock(Long productoId, Integer cantidad) {
-    Producto producto = productoRepository.findById(productoId)
-            .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + productoId));
+        String tipoAlerta = determinarTipoAlerta(producto);
 
-    if (producto.getStock() < cantidad) {
-        throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+        // notifySubscribers() — notifica observers
+        notifySubscribers(producto.getId(), producto.getNombre(),
+                tipoAlerta, producto.getStock());
+
+        if (!tipoAlerta.equals("NORMAL")) {
+            notificarCambioStock(producto, stockAnterior, tipoAlerta);
+        }
+
+        System.out.println("📦 Stock descontado: " + producto.getNombre() +
+                " → " + producto.getStock());
     }
 
-    producto.setStock(producto.getStock() - cantidad);
-    productoRepository.save(producto);
+    @Transactional
+    public ProductoResponse devolverStock(Long id, Integer cantidad) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-    // Verificar si genera alerta
-    String tipoAlerta = determinarTipoAlerta(producto);
-    if (!tipoAlerta.equals("NORMAL")) {
-        AlertaStock alerta = new AlertaStock();
-        alerta.setIdProducto(producto.getId());
-        alerta.setTipo(tipoAlerta);
-        alerta.setMensaje(generarMensaje(tipoAlerta, producto));
-        alertaStockRepository.save(alerta);
-        notificarCambioStock(producto, producto.getStock() + cantidad, tipoAlerta);
+        Integer stockAnterior = producto.getStock();
+        producto.setStock(producto.getStock() + cantidad);
+        productoRepository.save(producto);
+
+        System.out.println("🔄 SAGA Compensación: stock devuelto para " +
+                producto.getNombre() + " +" + cantidad);
+
+        return toResponse(producto);
     }
-
-    System.out.println("📦 Stock actualizado: " + producto.getNombre() +
-            " → " + producto.getStock());
-}
 
     public List<AlertaStock> obtenerAlertasPendientes() {
         return alertaStockRepository.findByLeidaFalse();
     }
 
+    private void notificarCambioStock(Producto producto,
+                                       Integer stockAnterior, String tipoAlerta) {
+        if (tipoAlerta.equals("NORMAL")) return;
+        try {
+            java.util.Map<String, Object> evento = new java.util.HashMap<>();
+            evento.put("idProducto", producto.getId());
+            evento.put("nombreProducto", producto.getNombre());
+            evento.put("tipoAlerta", tipoAlerta);
+            evento.put("stockNuevo", producto.getStock());
+
+            webClientBuilder.build()
+                    .post()
+                    .uri(notificacionesUrl + "/api/notificaciones/stock-evento")
+                    .bodyValue(evento)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .subscribe(response ->
+                            System.out.println("✅ ms-notificaciones notificado: " + response));
+        } catch (Exception e) {
+            System.out.println("⚠️ No se pudo notificar: " + e.getMessage());
+        }
+    }
 
     private String determinarTipoAlerta(Producto producto) {
         if (producto.esAgotado()) return "AGOTADO";
@@ -177,24 +209,20 @@ public void descontarStock(Long productoId, Integer cantidad) {
         return switch (tipo) {
             case "AGOTADO" -> "Producto AGOTADO: " + producto.getNombre();
             case "BAJO" -> "Stock bajo en: " + producto.getNombre() +
-                    " (actual: " + producto.getStock() + ", mínimo: " + producto.getStockMinimo() + ")";
+                    " (actual: " + producto.getStock() +
+                    ", mínimo: " + producto.getStockMinimo() + ")";
             case "SOBRESTOCK" -> "Sobrestock en: " + producto.getNombre() +
-                    " (actual: " + producto.getStock() + ", máximo: " + producto.getStockMaximo() + ")";
+                    " (actual: " + producto.getStock() +
+                    ", máximo: " + producto.getStockMaximo() + ")";
             default -> "";
         };
     }
 
     private ProductoResponse toResponse(Producto p) {
         return new ProductoResponse(
-                p.getId(),
-                p.getSku(),
-                p.getNombre(),
-                p.getPrecio(),
-                p.getStock(),
-                p.getStockMinimo(),
-                p.getStockMaximo(),
-                determinarTipoAlerta(p),
-                p.getActivo()
+                p.getId(), p.getSku(), p.getNombre(),
+                p.getPrecio(), p.getStock(), p.getStockMinimo(),
+                p.getStockMaximo(), determinarTipoAlerta(p), p.getActivo()
         );
     }
 }
