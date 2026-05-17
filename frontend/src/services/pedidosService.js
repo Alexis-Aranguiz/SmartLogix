@@ -28,3 +28,6 @@ export const obtenerPedido = (id) =>
 
 export const actualizarEstadoPedido = (id, nuevoEstado) =>
   axios.patch(`${BASE_URL}/${id}/estado?nuevoEstado=${nuevoEstado}`, {}, getHeaders()).then(r => r.data)
+export const cancelarPedido = (id, motivo = 'Cancelado por administrador') =>
+  axios.patch(`${BASE_URL}/${id}/cancelar?motivo=${motivo}`, {}, getHeaders())
+    .then(r => r.data)

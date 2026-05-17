@@ -119,6 +119,47 @@ private void notificarCambioStock(Producto producto, Integer stockAnterior, Stri
 
         return toResponse(producto);
     }
+    @Transactional
+public ProductoResponse devolverStock(Long id, Integer cantidad) {
+    Producto producto = productoRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+    Integer stockAnterior = producto.getStock();
+    producto.setStock(producto.getStock() + cantidad);
+    productoRepository.save(producto);
+
+    System.out.println("🔄 SAGA Compensación: stock devuelto para " +
+            producto.getNombre() + " +" + cantidad +
+            " (anterior: " + stockAnterior + " → nuevo: " + producto.getStock() + ")");
+
+    return toResponse(producto);
+}
+@Transactional
+public void descontarStock(Long productoId, Integer cantidad) {
+    Producto producto = productoRepository.findById(productoId)
+            .orElseThrow(() -> new RuntimeException("Producto no encontrado: " + productoId));
+
+    if (producto.getStock() < cantidad) {
+        throw new RuntimeException("Stock insuficiente para: " + producto.getNombre());
+    }
+
+    producto.setStock(producto.getStock() - cantidad);
+    productoRepository.save(producto);
+
+    // Verificar si genera alerta
+    String tipoAlerta = determinarTipoAlerta(producto);
+    if (!tipoAlerta.equals("NORMAL")) {
+        AlertaStock alerta = new AlertaStock();
+        alerta.setIdProducto(producto.getId());
+        alerta.setTipo(tipoAlerta);
+        alerta.setMensaje(generarMensaje(tipoAlerta, producto));
+        alertaStockRepository.save(alerta);
+        notificarCambioStock(producto, producto.getStock() + cantidad, tipoAlerta);
+    }
+
+    System.out.println("📦 Stock actualizado: " + producto.getNombre() +
+            " → " + producto.getStock());
+}
 
     public List<AlertaStock> obtenerAlertasPendientes() {
         return alertaStockRepository.findByLeidaFalse();

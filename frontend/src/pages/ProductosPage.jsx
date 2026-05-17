@@ -48,7 +48,7 @@ function ProductosPage() {
     setError('')
     const resultado = await crearPedido({
       clienteEmail: usuario.email,
-      tipoCliente: 'NORMAL',
+      tipoCliente: usuario.rol === 'PREMIUM' ? 'PREMIUM' : 'NORMAL',
       metodoPago,
       datoPago: '',
       items: carrito
@@ -57,9 +57,6 @@ function ProductosPage() {
     setCarrito([])
     setTimeout(() => setMensaje(''), 3000)
   } catch (err) {
-    console.log('Error completo:', err)
-    console.log('Status:', err.response?.status)
-    console.log('Data:', err.response?.data)
     setError('Error: ' + (err.response?.data || err.message))
   }
 }
@@ -150,17 +147,39 @@ function ProductosPage() {
   ))}
 </tbody>
             </table>
-            <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <select className="input" style={{ width: 'auto', marginBottom: 0 }}
-                value={metodoPago} onChange={e => setMetodoPago(e.target.value)}>
-                <option value="WEBPAY">WebPay</option>
-                <option value="TARJETA">Tarjeta</option>
-                <option value="TRANSFERENCIA">Transferencia</option>
-              </select>
-              <button className="btn btn-success" onClick={realizarPedido}>
-                Confirmar Pedido
-              </button>
-            </div>
+           <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+  <div>
+    {usuario?.rol === 'PREMIUM' ? (
+      <p>
+        <span style={{ color: '#94a3b8', textDecoration: 'line-through', fontSize: '0.9rem' }}>
+          ${carrito.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0).toLocaleString()}
+        </span>
+        <span style={{ color: '#fbbf24', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+          -10% PREMIUM
+        </span>
+        <br />
+        <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>
+          Total: ${(carrito.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0) * 0.90).toLocaleString()}
+        </strong>
+      </p>
+    ) : (
+      <p>
+        Total: <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>
+          ${carrito.reduce((acc, i) => acc + i.cantidad * i.precioUnitario, 0).toLocaleString()}
+        </strong>
+      </p>
+    )}
+  </div>
+  <select className="input" style={{ width: 'auto', marginBottom: 0 }}
+    value={metodoPago} onChange={e => setMetodoPago(e.target.value)}>
+    <option value="WEBPAY">WebPay</option>
+    <option value="TARJETA">Tarjeta</option>
+    <option value="TRANSFERENCIA">Transferencia</option>
+  </select>
+  <button className="btn btn-success" onClick={realizarPedido}>
+    Confirmar Pedido
+  </button>
+</div>
           </div>
         )}
       </div>

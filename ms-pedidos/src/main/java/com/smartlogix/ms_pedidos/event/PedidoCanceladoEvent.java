@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class PedidoCanceladoEvent {
     private String numeroPedido;
     private String motivo;
+    private String clienteEmail; 
 }

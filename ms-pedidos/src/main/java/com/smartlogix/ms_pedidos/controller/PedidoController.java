@@ -36,4 +36,11 @@ public class PedidoController {
     public ResponseEntity<Pedido> actualizarEstado(@PathVariable Long id, @RequestParam String nuevoEstado) {
         return ResponseEntity.ok(pedidoService.actualizarEstado(id, nuevoEstado));
     }
+    @PatchMapping("/{id}/cancelar")
+public ResponseEntity<Pedido> cancelarPedido(
+        @PathVariable Long id,
+        @RequestParam(defaultValue = "Cancelado por administrador") String motivo) {
+    pedidoService.cancelarPedido(id, motivo);
+    return ResponseEntity.ok(pedidoService.obtenerPorId(id));
+}
 }

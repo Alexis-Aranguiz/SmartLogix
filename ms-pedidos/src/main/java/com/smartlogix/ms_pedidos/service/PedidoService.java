@@ -147,16 +147,47 @@ public Pedido crearPedido(PedidoRequest request) {
         kafkaProducerService.enviarPedidoConfirmado(evento);
     }
 
-    @Transactional
-    public void cancelarPedido(Long id, String motivo) {
-        Pedido pedido = actualizarEstado(id, "CANCELADO");
-        
-        PedidoCanceladoEvent evento = PedidoCanceladoEvent.builder()
-                .numeroPedido(pedido.getNumeroPedido())
-                .motivo(motivo)
-                .build();
-        kafkaProducerService.enviarPedidoCancelado(evento);
+    @Autowired
+private org.springframework.web.reactive.function.client.WebClient.Builder webClientBuilder;
+
+@org.springframework.beans.factory.annotation.Value("${app.inventario.url}")
+private String inventarioUrl;
+
+@Transactional
+public void cancelarPedido(Long id, String motivo) {
+    Pedido pedido = actualizarEstado(id, "CANCELADO");
+
+    // SAGA COMPENSACIÓN — devolver stock de cada item
+    if (pedido.getItems() != null) {
+        pedido.getItems().forEach(item -> {
+            try {
+                java.util.Map<String, Integer> body = new java.util.HashMap<>();
+                body.put("cantidad", item.getCantidad());
+
+                webClientBuilder.build()
+                    .patch()
+                    .uri(inventarioUrl + "/api/inventario/productos/" +
+                            item.getProductoId() + "/devolver-stock")
+                    .bodyValue(body)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .subscribe(response ->
+                        System.out.println("✅ SAGA: Stock devuelto para producto " +
+                                item.getProductoId()));
+            } catch (Exception e) {
+                System.err.println("❌ SAGA: Error al devolver stock: " + e.getMessage());
+            }
+        });
     }
+
+    // Publicar evento de cancelación (Kafka)
+    PedidoCanceladoEvent evento = PedidoCanceladoEvent.builder()
+            .numeroPedido(pedido.getNumeroPedido())
+            .motivo(motivo)
+            .clienteEmail(pedido.getClienteEmail())
+            .build();
+    kafkaProducerService.enviarPedidoCancelado(evento);
+}
 
     private void notificarCambioEstado(Pedido pedido) {
         try {

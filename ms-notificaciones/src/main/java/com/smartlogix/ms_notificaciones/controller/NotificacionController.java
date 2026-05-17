@@ -45,12 +45,39 @@ public class NotificacionController {
     }
 
     @PostMapping("/pedido-evento")
-    public ResponseEntity<?> recibirEventoPedido(@RequestBody Map<String, Object> evento) {
-        String numeroPedido = evento.get("numeroPedido").toString();
-        String clienteEmail = evento.get("clienteEmail").toString();
+public ResponseEntity<?> recibirEventoPedido(@RequestBody Map<String, Object> evento) {
+    try {
         String estado = evento.get("estado").toString();
+        String numeroPedido = evento.get("numeroPedido").toString();
+        String clienteEmail = evento.get("clienteEmail") != null
+                ? evento.get("clienteEmail").toString()
+                : "encargado@smartlogix.cl";
 
-        pedidoEventListener.onPedidoActualizado(numeroPedido, clienteEmail, estado);
+        if (estado.equals("CANCELADO")) {
+            notificacionService.enviarNotificacion(
+                "EMAIL",
+                clienteEmail,
+                "❌ Pedido #" + numeroPedido + " cancelado",
+                "Tu pedido #" + numeroPedido + " fue cancelado. El stock ha sido devuelto."
+            );
+        } else if (estado.equals("CONFIRMADO")) {
+            notificacionService.enviarNotificacion(
+                "EMAIL",
+                clienteEmail,
+                "✅ Pedido #" + numeroPedido + " confirmado",
+                "Tu pedido #" + numeroPedido + " ha sido confirmado."
+            );
+        } else {
+            notificacionService.enviarNotificacion(
+                "EMAIL",
+                clienteEmail,
+                "📦 Pedido #" + numeroPedido + " actualizado",
+                "Tu pedido #" + numeroPedido + " cambió al estado: " + estado
+            );
+        }
         return ResponseEntity.ok("Notificación de pedido procesada");
+    } catch (Exception e) {
+        return ResponseEntity.ok("Error procesando notificación: " + e.getMessage());
     }
+}
 }

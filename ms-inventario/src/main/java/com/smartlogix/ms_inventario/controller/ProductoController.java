@@ -41,6 +41,13 @@ public class ProductoController {
         Integer nuevoStock = body.get("stock");
         return ResponseEntity.ok(productoService.actualizarStock(id, nuevoStock));
     }
+    @PatchMapping("/productos/{id}/devolver-stock")
+public ResponseEntity<ProductoResponse> devolverStock(
+        @PathVariable Long id,
+        @RequestBody Map<String, Integer> body) {
+    Integer cantidad = body.get("cantidad");
+    return ResponseEntity.ok(productoService.devolverStock(id, cantidad));
+}
 
     @GetMapping("/alertas")
     public ResponseEntity<List<AlertaStock>> alertasPendientes() {
