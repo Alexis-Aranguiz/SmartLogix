@@ -50,4 +50,5 @@ public class AuthService {
     public void logout(String token) {
         SessionManager.getInstance().cerrarSesion(token);
     }
+    
 }

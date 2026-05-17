@@ -11,11 +11,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
+import com.smartlogix.ms_usuarios.security.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     @Autowired
     private AuthService authService;
@@ -54,9 +58,31 @@ public ResponseEntity<?> logout(@RequestBody(required = false) Map<String, Strin
 
     @PostMapping("/registro")
 public ResponseEntity<?> registro(@RequestBody Usuario usuario) {
+    // Verificar si el email ya existe
+    if (usuarioRepository.findByEmail(usuario.getEmail()).isPresent()) {
+        return ResponseEntity.status(409).body("El email ya está registrado");
+    }
+
+    // Hashear password y guardar
     usuario.setId(null);
     usuario.setPassword(passwordEncoder.encode(usuario.getPassword()));
+    
+    // Si no viene rol, asignar CLIENTE por defecto
+    if (usuario.getRol() == null || usuario.getRol().isEmpty()) {
+        usuario.setRol("CLIENTE");
+    }
+    
     usuarioRepository.save(usuario);
-    return ResponseEntity.ok("Usuario creado correctamente");
+
+    // SINGLETON — registrar sesión activa igual que en login
+    String token = jwtUtil.generarToken(usuario.getEmail(), usuario.getRol());
+    SessionManager.getInstance().registrarSesion(token, usuario.getEmail());
+
+    return ResponseEntity.ok(new LoginResponse(
+            token,
+            usuario.getEmail(),
+            usuario.getNombre(),
+            usuario.getRol()
+    ));
 }
 }

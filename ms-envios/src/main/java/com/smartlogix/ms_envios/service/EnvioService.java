@@ -26,19 +26,30 @@ public class EnvioService {
 
     @Transactional
     public EnvioResponse crearEnvio(EnvioRequest request) {
-        String tracking = "SLX-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        String tracking = "SLX-" + UUID.randomUUID().toString()
+                .substring(0, 8).toUpperCase();
 
         Envio envio = new Envio();
         envio.setPedidoId(request.getPedidoId());
         envio.setTrackingNumber(tracking);
         envio.setDireccionDestino(request.getDireccionDestino());
         envio.setEstado(EstadoEnvio.PENDIENTE);
-        // La fecha de creación se genera sola en la clase Envio (LocalDateTime.now())
 
-        envioRepository.save(envio);
+        // Guardar en BD primero
+        Envio guardado = envioRepository.save(envio);
 
-        // Llamada externa protegida por Circuit Breaker
-        return envioClient.llamarApiExterna(request);
+        // CIRCUIT BREAKER — intentar llamada a API externa
+        // Si falla, el fallback devuelve FALLBACK-OFFLINE
+        // pero el envío ya está guardado en BD correctamente
+        try {
+            envioClient.llamarApiExterna(request);
+            System.out.println("✅ API courier respondió correctamente");
+        } catch (Exception e) {
+            System.out.println("⚠️ Circuit Breaker activado: " + e.getMessage());
+        }
+
+        // Siempre devolver el envío real guardado en BD
+        return mapToResponse(guardado);
     }
 
     public EnvioResponse obtenerPorId(Long id) {
@@ -49,7 +60,8 @@ public class EnvioService {
 
     public EnvioResponse obtenerPorPedidoId(Long pedidoId) {
         Envio envio = envioRepository.findByPedidoId(pedidoId)
-                .orElseThrow(() -> new RuntimeException("No hay envío para el pedido: " + pedidoId));
+                .orElseThrow(() -> new RuntimeException(
+                        "No hay envío para el pedido: " + pedidoId));
         return mapToResponse(envio);
     }
 
@@ -67,15 +79,16 @@ public class EnvioService {
                 .collect(Collectors.toList());
     }
 
-    // Método auxiliar para convertir la Entidad al DTO de respuesta
     private EnvioResponse mapToResponse(Envio envio) {
         return EnvioResponse.builder()
                 .id(envio.getId())
                 .pedidoId(envio.getPedidoId())
                 .trackingNumber(envio.getTrackingNumber())
                 .estado(envio.getEstado().name())
-                .nombreTransportista(envio.getTransportista() != null ? envio.getTransportista().getNombre() : "Por asignar")
-                .fechaCreacion(envio.getFechaCreacion()) // <--- AQUÍ PASAMOS LA FECHA
+                .nombreTransportista(envio.getTransportista() != null
+                        ? envio.getTransportista().getNombre()
+                        : "Por asignar")
+                .fechaCreacion(envio.getFechaCreacion())
                 .build();
     }
 }
