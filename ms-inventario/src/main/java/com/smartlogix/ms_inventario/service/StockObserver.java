@@ -1,14 +1,5 @@
 package com.smartlogix.ms_inventario.service;
 
-/**
- * PATRÓN OBSERVER — Interfaz Subscriber (GoF)
- * ══════════════════════════════════════════
- * Equivale a «interface» EventListener del diagrama del profe.
- * Todo Observer concreto debe implementar el método update().
- *
- * Publisher:  ProductoService (notifica cambios de stock)
- * Subscriber: Cualquier clase que implemente esta interfaz
- */
 public interface StockObserver {
 
     /**
