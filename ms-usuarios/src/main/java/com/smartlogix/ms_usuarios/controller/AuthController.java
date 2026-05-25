@@ -15,7 +15,7 @@ import com.smartlogix.ms_usuarios.security.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost"})
 public class AuthController {
 
     @Autowired

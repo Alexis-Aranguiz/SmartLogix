@@ -225,4 +225,9 @@ public class ProductoService {
                 p.getStockMaximo(), determinarTipoAlerta(p), p.getActivo()
         );
     }
+    @Transactional
+public void eliminarProducto(Long id) {
+    alertaStockRepository.deleteByIdProducto(id);
+    productoRepository.deleteById(id);
+}
 }

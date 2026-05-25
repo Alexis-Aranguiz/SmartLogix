@@ -13,7 +13,8 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/inventario")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost"})
+
 public class ProductoController {
 
     @Autowired
@@ -53,4 +54,9 @@ public ResponseEntity<ProductoResponse> devolverStock(
     public ResponseEntity<List<AlertaStock>> alertasPendientes() {
         return ResponseEntity.ok(productoService.obtenerAlertasPendientes());
     }
+    @DeleteMapping("/productos/{id}")
+public ResponseEntity<Void> eliminarProducto(@PathVariable Long id) {
+    productoService.eliminarProducto(id);
+    return ResponseEntity.noContent().build();
+}
 }
