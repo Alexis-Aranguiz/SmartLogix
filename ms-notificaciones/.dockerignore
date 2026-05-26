@@ -1,0 +1,22 @@
+# Archivos compilados localmente
+# Maven compila DENTRO del contenedor, no necesitamos estos archivos
+target
+ 
+# Control de versiones (no pertenece al contenedor)
+.git
+.gitignore
+ 
+# Configuración del IDE (solo para desarrollo local)
+.idea
+.vscode
+*.iml
+ 
+# Logs locales
+*.log
+ 
+# Archivos de sistema Mac
+.DS_Store
+ 
+# Documentación
+README.md
+ 

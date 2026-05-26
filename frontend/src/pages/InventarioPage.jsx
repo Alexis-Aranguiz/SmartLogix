@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
-import { listarProductos, crearProducto, actualizarStock, obtenerAlertas } from '../services/inventarioService'
+// 1. Agregar eliminarProducto al import
+import { listarProductos, crearProducto, actualizarStock, obtenerAlertas, eliminarProducto } from '../services/inventarioService'
 
 function InventarioPage() {
   const [productos, setProductos] = useState([])
@@ -34,6 +35,17 @@ function InventarioPage() {
       cargar()
       setTimeout(() => setMensaje(''), 3000)
     } catch (err) { setError('Error al actualizar stock') }
+  }
+
+  // 2. Agregar función eliminar
+  const handleEliminar = async (id) => {
+    if (!window.confirm('¿Estás seguro de eliminar este producto?')) return
+    try {
+      await eliminarProducto(id)
+      setMensaje('Producto eliminado')
+      cargar()
+      setTimeout(() => setMensaje(''), 3000)
+    } catch (err) { setError('Error al eliminar producto') }
   }
 
   return (
@@ -77,7 +89,8 @@ function InventarioPage() {
           <h3 style={{ marginBottom: '1rem' }}>Productos</h3>
           <table>
             <thead>
-              <tr><th>SKU</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Actualizar Stock</th></tr>
+              {/* 3. Agregar columna Eliminar */}
+              <tr><th>SKU</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Estado</th><th>Actualizar Stock</th><th>Eliminar</th></tr>
             </thead>
             <tbody>
               {productos.map(p => (
@@ -94,6 +107,11 @@ function InventarioPage() {
                       onChange={e => setNuevoStock({ ...nuevoStock, [p.id]: e.target.value })} />
                     <button className="btn btn-warning" onClick={() => handleActualizarStock(p.id)}>
                       Actualizar
+                    </button>
+                  </td>
+                  <td>
+                    <button className="btn btn-danger" onClick={() => handleEliminar(p.id)}>
+                      Eliminar
                     </button>
                   </td>
                 </tr>

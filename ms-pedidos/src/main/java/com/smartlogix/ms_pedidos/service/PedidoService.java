@@ -190,15 +190,18 @@ public void cancelarPedido(Long id, String motivo) {
 }
 
     private void notificarCambioEstado(Pedido pedido) {
-        try {
-            Map<String, Object> evento = new HashMap<>();
-            evento.put("numeroPedido", pedido.getNumeroPedido());
-            evento.put("clienteEmail", pedido.getClienteEmail());
-            evento.put("estado", pedido.getEstado());
-            
-            notificacionClient.enviarEventoPedido(evento);
-        } catch (Exception e) {
-            System.err.println("Error al enviar notificación: " + e.getMessage());
-        }
+    // Cancelación se maneja por Kafka (PedidoCanceladoEvent)
+    if (pedido.getEstado().equals("CANCELADO")) return;
+    
+    try {
+        Map<String, Object> evento = new HashMap<>();
+        evento.put("numeroPedido", pedido.getNumeroPedido());
+        evento.put("clienteEmail", pedido.getClienteEmail());
+        evento.put("estado", pedido.getEstado());
+        
+        notificacionClient.enviarEventoPedido(evento);
+    } catch (Exception e) {
+        System.err.println("Error al enviar notificación: " + e.getMessage());
     }
+}
 }

@@ -8,4 +8,5 @@ import java.util.List;
 public interface AlertaStockRepository extends JpaRepository<AlertaStock, Long> {
     List<AlertaStock> findByLeidaFalse();
     List<AlertaStock> findByIdProducto(Long idProducto);
+    void deleteByIdProducto(Long idProducto);
 }

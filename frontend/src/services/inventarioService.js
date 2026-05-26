@@ -17,3 +17,6 @@ export const actualizarStock = (id, stock) =>
 
 export const obtenerAlertas = () =>
   axios.get(`${BASE_URL}/alertas`, getHeaders()).then(r => r.data)
+
+export const eliminarProducto = (id) =>
+  axios.delete(`${BASE_URL}/productos/${id}`, getHeaders()).then(r => r.data)
