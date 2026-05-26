@@ -1,21 +1,8 @@
-# ============================================================
-# SmartLogix — Docker Compose completo
-# Levanta: Zookeeper + Kafka + todos los microservicios
-#
-# Comandos útiles:
-#   Levantar todo:        docker compose up --build
-#   Solo infraestructura: docker compose up -d zookeeper kafka
-#   Ver logs de un MS:    docker logs -f ms-pedidos
-#   Parar todo:           docker compose down
-# ============================================================
 
 services:
 
-  # ============================================================
   # INFRAESTRUCTURA: Zookeeper
-  # Zookeeper es el coordinador de Kafka.
-  # Kafka lo necesita para funcionar (en esta versión 7.4.0).
-  # ============================================================
+  
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
     container_name: smartlogix-zookeeper
@@ -33,11 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
-  # ============================================================
   # INFRAESTRUCTURA: Kafka
-  # Broker de mensajes. Los microservicios se comunican a través
-  # de topics Kafka (eventos de pedidos, notificaciones, etc.)
-  # ============================================================
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: smartlogix-kafka
@@ -51,8 +34,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # IMPORTANTE: Dentro de Docker los MS usan 'kafka:29092' (red interna)
-      # Desde tu PC (localhost) se usa 'localhost:9092' (red externa)
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
@@ -65,11 +46,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # ============================================================
   # MICROSERVICIO: ms-usuarios
-  # Puerto externo: 8081 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: registro, login, sesiones (Patrón Singleton)
-  # ============================================================
   ms-usuarios:
     build:
       context: ./ms-usuarios     # Carpeta donde está el Dockerfile
@@ -78,23 +55,17 @@ services:
     networks:
       - app-network
     ports:
-      - "8081:8080"              # PC:Contenedor
+      - "8081:8080"             
     depends_on:
       kafka:
         condition: service_healthy
     environment:
-      # Variables de entorno para Spring Boot
-      # Dentro del contenedor, Kafka se llama 'kafka' (nombre del servicio en la red)
-      # NO usar localhost porque dentro del contenedor localhost sería él mismo
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SERVER_PORT: 8080
     restart: on-failure          # Reinicia si falla (ej. si Kafka no está listo)
 
-  # ============================================================
   # MICROSERVICIO: ms-inventario
-  # Puerto externo: 8082 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: productos, stock, alertas (Patrón Observer Subject)
-  # ============================================================
+
   ms-inventario:
     build:
       context: ./ms-inventario
@@ -112,11 +83,8 @@ services:
       SERVER_PORT: 8080
     restart: on-failure
 
-  # ============================================================
   # MICROSERVICIO: ms-pedidos
-  # Puerto externo: 8083 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: pedidos, descuentos, pago (SAGA + Strategy + Facade)
-  # ============================================================
+ 
   ms-pedidos:
     build:
       context: ./ms-pedidos
@@ -132,15 +100,11 @@ services:
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SERVER_PORT: 8080
-      # URL de ms-notificaciones usando nombre del contenedor (no localhost)
       APP_NOTIFICACIONES_URL: http://ms-notificaciones:8080
     restart: on-failure
 
-  # ============================================================
   # MICROSERVICIO: ms-envios
-  # Puerto externo: 8084 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: rutas, transportistas, tracking (Circuit Breaker)
-  # ============================================================
+
   ms-envios:
     build:
       context: ./ms-envios
@@ -158,11 +122,7 @@ services:
       SERVER_PORT: 8080
     restart: on-failure
 
-  # ============================================================
   # MICROSERVICIO: ms-notificaciones
-  # Puerto externo: 8085 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: email, SMS, push (Observer Consumer + Factory Method)
-  # ============================================================
   ms-notificaciones:
     build:
       context: ./ms-notificaciones
@@ -180,11 +140,7 @@ services:
       SERVER_PORT: 8080
     restart: on-failure
 
-  # ============================================================
   # API GATEWAY
-  # Puerto externo: 8080 → Puerto interno Spring Boot: 8080
-  # Responsabilidad: enrutamiento, validación JWT, rate limiting
-  # ============================================================
   api-gateway:
     build:
       context: ./api-gateway
@@ -222,12 +178,6 @@ services:
       depends_on:
         - api-gateway
 
-# ============================================================
-# RED COMPARTIDA
-# Todos los servicios están en 'app-network'
-# Esto permite que se comuniquen por nombre (ej: 'kafka', 'ms-pedidos')
-# en vez de por IP (que cambia cada vez que se reinicia un contenedor)
-# ============================================================
 networks:
   app-network:
     driver: bridge
